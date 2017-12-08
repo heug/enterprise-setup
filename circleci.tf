@@ -54,6 +54,21 @@ variable "desired_builders_count" {
   default     = "1"
 }
 
+variable "mac_builder_instance_type" {
+  description = "instance type for the builder machines.  We recommend a r3 instance"
+  default     = "r3.2xlarge"
+}
+
+variable "max_mac_builders_count" {
+  description = "max number of 1.0 builders"
+  default     = "2"
+}
+
+variable "desired_mac_builders_count" {
+  description = "desired number of Mac 1.0 builders"
+  default     = "0"
+}
+
 variable "enable_nomad" {
   description = "enable running 2.0 builds"
   default     = 1
@@ -112,6 +127,10 @@ variable "services_user_data_enabled" {
 }
 
 variable "legacy_builder_spot_price" {
+  default = ""
+}
+
+variable "mac_legacy_builder_spot_price" {
   default = ""
 }
 
@@ -492,6 +511,46 @@ module "nomad" {
   ami_id                = "${(var.services_ami != "") ? var.services_ami : lookup(var.ubuntu_ami, var.aws_region)}"
   aws_subnet_cidr_block = "${data.aws_subnet.subnet.cidr_block}"
   services_private_ip   = "${aws_instance.services.private_ip}"
+}
+
+# Provision Mac Box HERE!!! HAHAHAHA
+module "mac_legacy_builder_user_data" {
+  source = "./modules/mac-legacy-builder-cloudinit-ubuntu-v1"
+
+  services_private_ip = "${aws_instance.services.private_ip}"
+
+  circle_secret_passphrase = "${var.circle_secret_passphrase}"
+  https_proxy              = "${var.https_proxy}"
+  http_proxy               = "${var.http_proxy}"
+  no_proxy                 = "${var.no_proxy}"
+}
+
+module "mac_legacy_builder" {
+  source = "./modules/mac-legacy-builder"
+
+  prefix                    = "${var.prefix}"
+  name                      = "mac-builders"
+  aws_subnet_id             = "${var.aws_subnet_id}"
+  aws_ssh_key_name          = "${var.aws_ssh_key_name}"
+  aws_instance_profile_name = "${aws_iam_instance_profile.circleci_profile.name}"
+
+  builder_security_group_ids = [
+    "${aws_security_group.circleci_builders_sg.id}",
+    "${aws_security_group.circleci_builders_admin_sg.id}",
+    "${aws_security_group.circleci_users_sg.id}",
+  ]
+
+  asg_max_size     = "${var.max_mac_builders_count}"
+  asg_min_size     = 0
+  asg_desired_size = "${var.desired_mac_builders_count}"
+
+  user_data                     = "${module.mac_legacy_builder_user_data.rendered}"
+  delete_volume_on_termination  = "${var.services_delete_on_termination}"
+  image_id                      = "${lookup(var.ubuntu_ami, var.aws_region)}"
+  instance_type                 = "${var.mac_builder_instance_type}"
+  spot_price                    = "${var.mac_legacy_builder_spot_price}"
+  shutdown_queue_target_sqs_arn = "${module.shutdown_sqs.sqs_arn}"
+  shutdown_queue_role_arn       = "${module.shutdown_sqs.queue_role_arn}"
 }
 
 output "success_message" {
