@@ -47,3 +47,5 @@ Optional vars:
   | route_name | Route name to configure for Services box | "" |
   | route_zone_id | Zone to configure route in | "" |
   | services_user_data_enabled | Set to 0 to disable automated installation on Services Box | 1 |
+  | desired_mac_builders_count | Set to 1 to enable 1.0 Mac builders | 1 |
+  | mac_builder_instance_type | Instance type for the Mac builder machines. We recommend a r3 instance | r3.2xlarge |
