@@ -53,4 +53,5 @@ sudo docker run -d -p 443:443 \
       -e NO_LXC=true \
       -e CIRCLE_CONTAINER_TYPE=esxi-osx \
       -e CIRCLE_FLEET=osx \
+      --net circle-bridge \
       circleci/builder-base:1.1

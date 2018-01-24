@@ -56,7 +56,7 @@ variable "desired_builders_count" {
 
 variable "mac_builder_instance_type" {
   description = "instance type for the builder machines.  We recommend a r3 instance"
-  default     = "r3.2xlarge"
+  default     = "m4.xlarge"
 }
 
 variable "max_mac_builders_count" {
@@ -513,7 +513,7 @@ module "nomad" {
   services_private_ip   = "${aws_instance.services.private_ip}"
 }
 
-# Provision Mac Box HERE!!! HAHAHAHA
+# Mac Builders
 module "mac_legacy_builder_user_data" {
   source = "./modules/mac-legacy-builder-cloudinit-ubuntu-v1"
 
@@ -529,7 +529,7 @@ module "mac_legacy_builder" {
   source = "./modules/mac-legacy-builder"
 
   prefix                    = "${var.prefix}"
-  name                      = "mac-builders"
+  name                      = "mac-builder"
   aws_subnet_id             = "${var.aws_subnet_id}"
   aws_ssh_key_name          = "${var.aws_ssh_key_name}"
   aws_instance_profile_name = "${aws_iam_instance_profile.circleci_profile.name}"

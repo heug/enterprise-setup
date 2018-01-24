@@ -8,7 +8,7 @@ resource "aws_launch_configuration" "mac_lc" {
 
   root_block_device {
     volume_type           = "gp2"
-    volume_size           = "150"
+    volume_size           = "50"
     delete_on_termination = "${var.delete_volume_on_termination}"
   }
 
