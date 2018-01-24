@@ -32,11 +32,3 @@ no_proxy = ""
 
 # Use this var if you have multiple installation within one AWS region
 # prefix = "..."
-
-#####################################
-# 4. Optional Mac Configuration
-#####################################
-
-# Set this to `1` or higher to enable CircleCI Mac 1.0 builders (default: 0)
-# desired_mac_builders_count = "0"
-# mac_builder_instance_type = "m4.xlarge"

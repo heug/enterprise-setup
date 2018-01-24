@@ -59,16 +59,6 @@ variable "mac_builder_instance_type" {
   default     = "m4.xlarge"
 }
 
-variable "max_mac_builders_count" {
-  description = "max number of 1.0 builders"
-  default     = "2"
-}
-
-variable "desired_mac_builders_count" {
-  description = "desired number of Mac 1.0 builders"
-  default     = "0"
-}
-
 variable "enable_nomad" {
   description = "enable running 2.0 builds"
   default     = 1
@@ -130,10 +120,6 @@ variable "legacy_builder_spot_price" {
   default = ""
 }
 
-variable "mac_legacy_builder_spot_price" {
-  default = ""
-}
-
 data "aws_subnet" "subnet" {
   id = "${var.aws_subnet_id}"
 }
@@ -151,6 +137,23 @@ data "template_file" "services_user_data" {
     http_proxy               = "${var.http_proxy}"
     https_proxy              = "${var.https_proxy}"
     no_proxy                 = "${var.no_proxy}"
+  }
+}
+
+data "template_file" "mac_legacy_builder_user_data" {
+  template = "${file("templates/mac_legacy_builder_user_data.tpl")}"
+
+  vars {
+    circle_secret_passphrase = "${var.circle_secret_passphrase}"
+    # sqs_queue_url            = "${module.shutdown_sqs.sqs_id}"
+    # s3_bucket                = "${aws_s3_bucket.circleci_bucket.id}"
+    # aws_region               = "${var.aws_region}"
+    # subnet_id                = "${var.aws_subnet_id}"
+    # vm_sg_id                 = "${aws_security_group.circleci_vm_sg.id}"
+    http_proxy               = "${var.http_proxy}"
+    https_proxy              = "${var.https_proxy}"
+    no_proxy                 = "${var.no_proxy}"
+    services_private_ip      = "${aws_instance.services.private_ip}"
   }
 }
 
@@ -448,6 +451,38 @@ resource "aws_instance" "services" {
   }
 }
 
+resource "aws_instance" "mac-builder" {
+  instance_type               = "${var.mac_builder_instance_type}"
+  ami                         = "${lookup(var.ubuntu_ami, var.aws_region)}"
+  key_name                    = "${var.aws_ssh_key_name}"
+  subnet_id                   = "${var.aws_subnet_id}"
+  associate_public_ip_address = true
+  disable_api_termination     = "${var.services_disable_api_termination}"
+  iam_instance_profile        = "${aws_iam_instance_profile.circleci_profile.name}"
+
+  vpc_security_group_ids = [
+    "${aws_security_group.circleci_builders_sg.id}",
+    "${aws_security_group.circleci_builders_admin_sg.id}",
+    "${aws_security_group.circleci_users_sg.id}",
+  ]
+
+  tags {
+    Name = "${var.prefix}_mac-legacy-builder"
+  }
+
+  root_block_device {
+    volume_type           = "gp2"
+    volume_size           = "50"
+    delete_on_termination = "${var.services_delete_on_termination}"
+  }
+
+  user_data = "${ data.template_file.mac_legacy_builder_user_data.rendered }"
+
+  lifecycle {
+    prevent_destroy = false
+  }
+}
+
 resource "aws_route53_record" "services_route" {
   count   = "${var.enable_route}"
   zone_id = "${var.route_zone_id}"
@@ -511,46 +546,6 @@ module "nomad" {
   ami_id                = "${(var.services_ami != "") ? var.services_ami : lookup(var.ubuntu_ami, var.aws_region)}"
   aws_subnet_cidr_block = "${data.aws_subnet.subnet.cidr_block}"
   services_private_ip   = "${aws_instance.services.private_ip}"
-}
-
-# Mac Builders
-module "mac_legacy_builder_user_data" {
-  source = "./modules/mac-legacy-builder-cloudinit-ubuntu-v1"
-
-  services_private_ip = "${aws_instance.services.private_ip}"
-
-  circle_secret_passphrase = "${var.circle_secret_passphrase}"
-  https_proxy              = "${var.https_proxy}"
-  http_proxy               = "${var.http_proxy}"
-  no_proxy                 = "${var.no_proxy}"
-}
-
-module "mac_legacy_builder" {
-  source = "./modules/mac-legacy-builder"
-
-  prefix                    = "${var.prefix}"
-  name                      = "mac-builder"
-  aws_subnet_id             = "${var.aws_subnet_id}"
-  aws_ssh_key_name          = "${var.aws_ssh_key_name}"
-  aws_instance_profile_name = "${aws_iam_instance_profile.circleci_profile.name}"
-
-  builder_security_group_ids = [
-    "${aws_security_group.circleci_builders_sg.id}",
-    "${aws_security_group.circleci_builders_admin_sg.id}",
-    "${aws_security_group.circleci_users_sg.id}",
-  ]
-
-  # asg_max_size     = "${var.max_mac_builders_count}"
-  # asg_min_size     = 0
-  # asg_desired_size = "${var.desired_mac_builders_count}"
-
-  user_data                     = "${module.mac_legacy_builder_user_data.rendered}"
-  delete_volume_on_termination  = "${var.services_delete_on_termination}"
-  image_id                      = "${lookup(var.ubuntu_ami, var.aws_region)}"
-  instance_type                 = "${var.mac_builder_instance_type}"
-  spot_price                    = "${var.mac_legacy_builder_spot_price}"
-  shutdown_queue_target_sqs_arn = "${module.shutdown_sqs.sqs_arn}"
-  shutdown_queue_role_arn       = "${module.shutdown_sqs.queue_role_arn}"
 }
 
 output "success_message" {
