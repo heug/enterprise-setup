@@ -145,11 +145,6 @@ data "template_file" "mac_legacy_builder_user_data" {
 
   vars {
     circle_secret_passphrase = "${var.circle_secret_passphrase}"
-    # sqs_queue_url            = "${module.shutdown_sqs.sqs_id}"
-    # s3_bucket                = "${aws_s3_bucket.circleci_bucket.id}"
-    # aws_region               = "${var.aws_region}"
-    # subnet_id                = "${var.aws_subnet_id}"
-    # vm_sg_id                 = "${aws_security_group.circleci_vm_sg.id}"
     http_proxy               = "${var.http_proxy}"
     https_proxy              = "${var.https_proxy}"
     no_proxy                 = "${var.no_proxy}"
