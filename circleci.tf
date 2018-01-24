@@ -540,9 +540,9 @@ module "mac_legacy_builder" {
     "${aws_security_group.circleci_users_sg.id}",
   ]
 
-  asg_max_size     = "${var.max_mac_builders_count}"
-  asg_min_size     = 0
-  asg_desired_size = "${var.desired_mac_builders_count}"
+  # asg_max_size     = "${var.max_mac_builders_count}"
+  # asg_min_size     = 0
+  # asg_desired_size = "${var.desired_mac_builders_count}"
 
   user_data                     = "${module.mac_legacy_builder_user_data.rendered}"
   delete_volume_on_termination  = "${var.services_delete_on_termination}"
