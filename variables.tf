@@ -134,3 +134,6 @@ variable "ubuntu_ami" {
   }
 }
 
+variable "mongo_image" {
+    default = "ami-fc4f5e85"
+}
