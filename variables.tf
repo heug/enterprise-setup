@@ -136,6 +136,7 @@ variable "ubuntu_ami" {
 
 ### Mongo variables
 
+# TODO: Check image and confirm
 variable "mongo_image" {
     default = "ami-fc4f5e85"
 }

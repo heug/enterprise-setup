@@ -1,3 +1,4 @@
+# TODO: Figure this out
 data "aws_route53_zone" "zone" {
   zone_id = "${var.zone_id}"
 }
@@ -10,13 +11,13 @@ module "cloudinit" {
   zone_name              = "${data.aws_route53_zone.zone.name}"
   mongo_replica_set_name = "${format("%smongodb-%s", var.prefix, var.cluster_id)}"
   mongo_device_path      = "/dev/xvdi"
-  influxdb_url           = "${var.influxdb_url}"
-  influxdb_database      = "${var.influxdb_database}"
+  # influxdb_url           = "${var.influxdb_url}"
+  # influxdb_database      = "${var.influxdb_database}"
 }
 
 resource "aws_security_group" "mongodb_clients" {
   name   = "${format("%smongodb-%s-clients", var.prefix, var.cluster_id)}"
-  vpc_id = "${var.vpc_id}"
+  vpc_id = "${var.aws_vpc_id}"
 
   egress {
     from_port   = 27017
@@ -34,7 +35,7 @@ resource "aws_security_group" "mongodb_clients" {
 
 resource "aws_security_group" "mongodb_servers" {
   name   = "${format("%smongodb-%s-servers", var.prefix, var.cluster_id)}"
-  vpc_id = "${var.vpc_id}"
+  vpc_id = "${var.aws_vpc_id}"
 
   ingress {
     from_port       = 27017
@@ -47,7 +48,8 @@ resource "aws_security_group" "mongodb_servers" {
     from_port       = 27017
     to_port         = 27017
     protocol        = "tcp"
-    security_groups = ["sg-5f39f225"]
+    # TODO: Sub SG with Services Box
+    # security_groups = ["sg-5f39f225"]
   }
   egress {
     from_port = 27017
@@ -70,18 +72,19 @@ resource "aws_security_group" "mongodb_servers" {
     cidr_blocks = ["0.0.0.0/0"]
   }
 
-  egress {
-    from_port   = "${var.influxdb_port}"
-    to_port     = "${var.influxdb_port}"
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
+  # egress {
+  #   from_port   = "${var.influxdb_port}"
+  #   to_port     = "${var.influxdb_port}"
+  #   protocol    = "tcp"
+  #   cidr_blocks = ["0.0.0.0/0"]
+  # }
 
   egress {
     from_port = 27017
     to_port   = 27017
     protocol  = "tcp"
-    security_groups = ["sg-c73ff4bd"]
+    # TODO: Sub SG with Services Box
+    # security_groups = ["sg-c73ff4bd"]
   }
 
   tags {
@@ -116,12 +119,13 @@ resource "aws_instance" "mongodb" {
   ebs_optimized                        = "${var.ebs_optimized}"
   instance_initiated_shutdown_behavior = "stop"
   instance_type                        = "${var.instance_type}"
-  key_name                             = "${var.key_name}"
+  key_name                             = "${var.aws_key_name}"
   vpc_security_group_ids               = ["${concat(list(aws_security_group.mongodb_servers.id), var.security_group_ids)}"]
   subnet_id                            = "${var.subnet_id}"
   user_data                            = "${element(module.cloudinit.rendered, count.index)}"
   iam_instance_profile                 = "${var.instance_profile_name}"
-  disable_api_termination              = true
+  # TODO: Remove comments after testing
+  # disable_api_termination              = true
 
   tags {
     Name      = "${format("%smongodb-%s-%02d", var.prefix, var.cluster_id, count.index + 1)}"
