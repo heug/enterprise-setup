@@ -32,3 +32,20 @@ no_proxy = ""
 
 # Use this var if you have multiple installation within one AWS region
 # prefix = "..."
+
+#####################################
+# 4. EXPERIMENTAL - HA Configuration
+#####################################
+
+# Default is c4.8xlarge
+# mongo_instance_type = ""
+
+# Unsure if this needs to be specified
+# azs = [
+    # "us-west-2a",
+    # "us-west-2b",
+    # "us-west-2c"
+# ]
+
+# Zone...?
+# ccie_zone = ""

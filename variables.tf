@@ -134,6 +134,20 @@ variable "ubuntu_ami" {
   }
 }
 
+### Mongo variables
+
 variable "mongo_image" {
     default = "ami-fc4f5e85"
+}
+
+variable "mongo_instance_type" {
+    default = "c4.8xlarge"
+}
+
+variable "azs" {
+  default = [ ]
+}
+
+variable "ccie_zone" {
+  default = ""
 }
